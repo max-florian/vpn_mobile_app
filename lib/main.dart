@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 int _countdown = 10;
@@ -49,6 +50,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  bool _isFirstClick = true;
+  String _chosenServer = 'Choose Server';
   // Define a global key for the scaffold widget
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -106,12 +109,17 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _onChooseServerPressed() {
-    // Use the Navigator widget to push a new screen
+    //_showNotificationAlert();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ServerListScreen(), // This is the name of the new screen widget
+        builder: (context) => ServerListScreen(
+          onServerChosen: (server) {
+            setState(() {
+              _chosenServer = server;
+            });
+          },
+        ),
       ),
     );
   }
@@ -133,6 +141,35 @@ class _MyAppState extends State<MyApp> {
     _overlayEntry?.remove();
     // Set the overlay entry object to null
     _overlayEntry = null;
+  }
+
+  void _showNotificationAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Receive Notifications'),
+          content: Text('Do you want to receive notifications?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                print('User has cancelled the notification request');
+              },
+            ),
+            TextButton(
+              child: Text('Accept'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                print('User has accepted the notification request');
+                // You can add your logic here to handle the notification acceptance
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -199,7 +236,7 @@ class _MyAppState extends State<MyApp> {
           children: <Widget>[
             ElevatedButton(
               child: Text(
-                'Choose Server',
+                _chosenServer,
                 style: TextStyle(
                   fontSize: 20,
                 ),
@@ -234,7 +271,7 @@ class _MyAppState extends State<MyApp> {
             Text(
               '$_countdown',
               style: TextStyle(
-                color: Colors.red,
+                color: Colors.black,
                 fontSize: 50,
               ),
             ),
@@ -298,7 +335,7 @@ class _MyAppState extends State<MyApp> {
             0.8, // This will make the container 80% of the screen width
         height: MediaQuery.of(context).size.height * 0.8,
         // Add a color property and set its value to Colors.white
-        color: Colors.blue,
+        color: Colors.white,
         // Use a stack widget to position the text and the button inside the container
         child: Stack(
           // Use two positioned widgets for the stack's children
@@ -329,12 +366,19 @@ class _MyAppState extends State<MyApp> {
               top:
                   10, // You can adjust this value to change the vertical position of the button
               // Use an elevated button widget to display a button with an "X" icon
-              child: ElevatedButton(
-                child: Icon(Icons.close),
-                onPressed: _onClosePressed,
-                style: ElevatedButton.styleFrom(
-                  shape: CircleBorder(), // This will make the button round
+              child: ElevatedButton.icon(
+                icon: Icon(
+                  Icons.close,
+                  color: Colors.black,
+                ), // Replace with your icon
+                label: Text(''), // Empty text
+                style: ButtonStyle(
+                  backgroundColor:
+                      MaterialStateProperty.all(Colors.transparent),
+                  shadowColor: MaterialStateProperty.all(Colors.transparent),
+                  overlayColor: MaterialStateProperty.all(Colors.transparent),
                 ),
+                onPressed: _onClosePressed,
               ),
             ),
           ],
@@ -345,32 +389,29 @@ class _MyAppState extends State<MyApp> {
 }
 
 class ServerListScreen extends StatelessWidget {
-  const ServerListScreen({Key? key}) : super(key: key);
+  final ValueChanged<String> onServerChosen;
+
+  ServerListScreen({required this.onServerChosen});
 
   @override
   Widget build(BuildContext context) {
-    // Return a scaffold widget that provides the basic structure for the screen
     return Scaffold(
-      // Define an app bar widget that shows the title of the screen
       appBar: AppBar(
-        title: Text('Choose Server'),
+        title: Text('Server List'),
       ),
-      // Define a body widget that shows the list of rows
-      body: ListView.separated(
-        itemCount: _images.length, // This is the number of rows in the list
+      body: ListView.builder(
+        itemCount: _texts.length,
         itemBuilder: (context, index) {
-          // Return a list tile widget for each row
           return ListTile(
             // Use an image.network widget to display an image from a URL
             leading: Image.network(_images[index]),
-            // Use a text widget to display a text
+
             title: Text(_texts[index]),
-            onTap: () => {Navigator.pop(context)},
+            onTap: () {
+              onServerChosen(_texts[index]);
+              Navigator.pop(context);
+            },
           );
-        },
-        separatorBuilder: (context, index) {
-          // Return a divider widget between each row
-          return Divider();
         },
       ),
     );
@@ -381,10 +422,27 @@ class BlogScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text('My Blog'),
+      appBar: AppBar(
+        title: TextField(
+          decoration: InputDecoration(
+            hintText: 'Search',
+            fillColor: Colors.white,
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          // Add your search logic here
+          onChanged: (value) {
+            print('Search text: $value');
+          },
         ),
-        body: Text('My Body'));
+      ),
+      body: Center(
+        child: Text('BlogScreen Content'),
+      ),
+    );
   }
 }
 
